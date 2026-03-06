@@ -46,9 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.mnivesh.callyn.ui.theme.sdp
-import com.mnivesh.callyn.ui.theme.ssp
 import com.mnivesh.smsforwarder.R
+import com.mnivesh.smsforwarder.ui.theme.sdp
+import com.mnivesh.smsforwarder.ui.theme.ssp
 import kotlinx.coroutines.delay
 
 @Composable
@@ -73,7 +73,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.sdp())
+                .padding(24.dp)
                 .systemBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -107,19 +107,34 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     )
 
                     // 3. App Name
-                    Text(
-                        text = "SMS Forwarder",
-                        fontSize = 36.ssp(),
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        letterSpacing = 1.ssp(),
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.padding(top = 18.sdp())
-                    )
+                    ) {
+                        Text(
+                            text = "mRelay",
+                            fontSize = 36.ssp(),
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            letterSpacing = 1.ssp()
+                        )
+
+                        Spacer(modifier = Modifier.width(12.sdp()))
+
+                        Image(
+                            painter = painterResource(id = R.drawable.mrelay),
+                            contentDescription = "App Icon",
+                            modifier = Modifier
+                                .size(36.sdp())
+                                .clip(RoundedCornerShape(8.sdp()))
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(36.sdp()))
 
                     Text(
-                        text = "Securely capture and sync authorized\nbusiness SMS to the central server.",
+                        text = "Securely capture and sync authorized\nbusiness SMS to Callyn.",
                         fontSize = 16.ssp(),
                         color = Color.White.copy(alpha = 0.6f),
                         lineHeight = 24.ssp(),
@@ -144,7 +159,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     LoginButton(
                         isLoading = isLoading,
                         onClick = {
-                            val ssoUrl = "mniveshstore://sso/request?callback=smsforwarder://auth/callback"
+                            val ssoUrl = "mniveshcentral://sso/request?callback=smsforwarder://auth/callback"
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ssoUrl)).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             }
@@ -152,7 +167,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Please install mNivesh Store first", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Please install mNivesh Central first", Toast.LENGTH_LONG).show()
                             }
                         }
                     )
@@ -286,12 +301,6 @@ fun PermissionsDialog(onDismiss: () -> Unit) {
                         title = "Network Access",
                         desc = "Necessary to forward matching messages to the secure internal server over HTTPS."
                     )
-
-                    PermissionItem(
-                        icon = Icons.Rounded.SettingsApplications,
-                        title = "Background Execution",
-                        desc = "Allows the WorkManager to queue and retry message uploads if the network drops out."
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.sdp()))
@@ -363,7 +372,7 @@ fun FeatureCarousel() {
     val features = remember {
         listOf(
             AppFeature("Targeted Interception", "Only processes messages from approved and whitelisted sender IDs."),
-            AppFeature("Automated Sync", "Pushes critical OTPs and alerts directly to the dashboard."),
+            AppFeature("Automated Sync", "Pushes critical OTPs and alerts directly to Callyn."),
             AppFeature("Background Reliability", "Queues uploads efficiently even when the app is closed."),
             AppFeature("Secure Transfers", "All message payloads are sent via authenticated, encrypted connections.")
         )
@@ -535,9 +544,9 @@ fun LoginButton(isLoading: Boolean, onClick: () -> Unit) {
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.size(20.sdp()), color = Color(0xFF0F172A), strokeWidth = 2.5.dp)
         } else {
-            Image(painter = painterResource(id = R.drawable.mnivesh_store), contentDescription = null, modifier = Modifier.size(32.sdp()))
+            Image(painter = painterResource(id = R.drawable.centralicon), contentDescription = null, modifier = Modifier.size(32.sdp()))
             Spacer(modifier = Modifier.width(12.sdp()))
-            Text(text = "Login using mNivesh Store", fontSize = 17.ssp(), color = Color(0xFF0F172A), fontWeight = FontWeight.Bold)
+            Text(text = "Login using mNivesh Central", fontSize = 17.ssp(), color = Color(0xFF0F172A), fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.mnivesh.smsforwarder
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -8,22 +9,36 @@ import com.mnivesh.smsforwarder.screens.HomeScreen
 import com.mnivesh.smsforwarder.screens.LoginScreen
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    startDestination: String,
+    shouldNavigateHome: Boolean,
+    onNavigated: () -> Unit
+) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "login") {
+    // Observes state changes from MainActivity
+    LaunchedEffect(shouldNavigateHome) {
+        if (shouldNavigateHome) {
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+            onNavigated() // Reset the trigger
+        }
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {
-            LoginScreen(
-                onLoginSuccess = {
-                    // clear backstack so user cant back-button into login screen
-                    navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }
+            LoginScreen(onLoginSuccess = {})
+        }
+        composable("home") {
+            HomeScreen(
+                onLogout = {
+                    // Navigate back to login and clear everything else off the backstack
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
                     }
                 }
             )
-        }
-        composable("home") {
-            HomeScreen()
         }
     }
 }
