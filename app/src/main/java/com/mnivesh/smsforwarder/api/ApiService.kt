@@ -28,6 +28,13 @@ data class SmsLogResponse(
     val uploadedBy: String
 )
 
+data class EmployeeDirectory(
+    val name: String,
+    val email: String,
+    val phone: String,
+    val department: String,
+)
+
 interface ApiService {
     @GET("auth/callback")
     suspend fun handleCallback(@Query("code") code: String): Response<LoginResponse>
@@ -43,4 +50,10 @@ interface ApiService {
     suspend fun getSmsLogs(
         @Header("Authorization") token: String
     ): Response<List<SmsLogResponse>>
+
+    @GET("getEmployeePhoneDetails")
+    suspend fun getEmployeePhoneDetails(
+        @Header("Authorization") token: String,
+    ): Response<List<EmployeeDirectory>>
+
 }
