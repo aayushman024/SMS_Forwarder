@@ -3,9 +3,11 @@ package com.mnivesh.smsforwarder.api
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 data class LoginResponse(
@@ -35,6 +37,18 @@ data class EmployeeDirectory(
     val department: String,
 )
 
+data class WhitelistRequest(
+    val senderID: String,
+    val applicableEmployees: List<String> // sending emails instead of objects
+)
+
+data class WhitelistResponse(
+    val _id: String,
+    val senderID: String,
+    val applicableEmployees: List<String>,
+    val uploadedBy: String
+)
+
 interface ApiService {
     @GET("auth/callback")
     suspend fun handleCallback(@Query("code") code: String): Response<LoginResponse>
@@ -56,4 +70,20 @@ interface ApiService {
         @Header("Authorization") token: String,
     ): Response<List<EmployeeDirectory>>
 
+    @GET("whitelist")
+    suspend fun getWhitelist(
+        @Header("Authorization") token: String
+    ): Response<List<WhitelistResponse>>
+
+    @POST("whitelist")
+    suspend fun addWhitelistEntry(
+        @Header("Authorization") token: String,
+        @Body request: WhitelistRequest
+    ): Response<WhitelistResponse>
+
+    @DELETE("whitelist/{id}")
+    suspend fun deleteWhitelistEntry(
+        @Header("Authorization") token: String,
+        @Path("id") id: String
+    ): Response<ResponseBody>
 }
