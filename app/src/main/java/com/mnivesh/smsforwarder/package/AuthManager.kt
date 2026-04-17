@@ -8,14 +8,18 @@ class AuthManager(context: Context) {
         context.getSharedPreferences("AuthPrefs", Context.MODE_PRIVATE)
 
     private val AUTH_TOKEN = "AuthToken"
+    private val REFRESH_TOKEN = "RefreshToken"
     private val USER_NAME = "UserName"
     private val USER_EMAIL = "UserEmail"
     private val KEY_DEPARTMENT = "user_department"
+    private val WORK_PHONE = "work_phone"
 
     fun isLoggedIn(): Boolean = prefs.contains(AUTH_TOKEN)
 
     fun saveToken(token: String) = prefs.edit().putString(AUTH_TOKEN, token).apply()
     fun getToken(): String? = prefs.getString(AUTH_TOKEN, null)
+    fun saveRefreshToken(token: String?) = prefs.edit().putString(REFRESH_TOKEN, token).apply()
+    fun getRefreshToken(): String? = prefs.getString(REFRESH_TOKEN, null)
 
     fun saveUserName(name: String?) = prefs.edit().putString(USER_NAME, name).apply()
     fun getUserName(): String? = prefs.getString(USER_NAME, null)
@@ -25,6 +29,9 @@ class AuthManager(context: Context) {
 
     fun saveDepartment(department: String?) = prefs.edit().putString(KEY_DEPARTMENT, department).apply()
     fun getDepartment(): String? = prefs.getString(KEY_DEPARTMENT, null)
+
+    fun saveWorkPhone(workPhone: String?) = prefs.edit().putString(WORK_PHONE, workPhone).apply()
+    fun getWorkPhone(): String? = prefs.getString(WORK_PHONE, null)
 
     fun logout() = prefs.edit().clear().apply()
 }

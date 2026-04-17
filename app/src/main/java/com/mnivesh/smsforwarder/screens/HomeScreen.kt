@@ -22,11 +22,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -54,19 +57,21 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-// ─── Palette ────────────────────────────────────────────────────────────────
-private val BgDeep       = Color(0xFF060C1A)
-private val BgSurface    = Color(0xFF0D1628)
-private val BgCard       = Color(0xFF111E35)
-private val BgCardAlt    = Color(0xFF0F1A2E)
-private val AccentBlue   = Color(0xFF3B82F6)
-private val AccentIndigo = Color(0xFF6366F1)
-private val AccentCyan   = Color(0xFF22D3EE)
-private val TextPrimary  = Color(0xFFEFF6FF)
-private val TextSecondary= Color(0xFF94A3B8)
-private val TextMuted    = Color(0xFF475569)
-private val BorderSubtle = Color(0xFF1E3A5F)
-private val DangerRed    = Color(0xFFEF4444)
+// ─── Premium Corporate Light Palette ────────────────────────────────────────
+private val BgDeep        = Color(0xFFF0F4F8)   // cool slate background
+private val BgSurface     = Color(0xFFF8FAFC)   // near-white surface
+private val BgCard        = Color(0xFFFFFFFF)   // pure white cards
+private val BgCardAlt     = Color(0xFFF1F5F9)   // off-white alternate
+private val AccentBlue    = Color(0xFF1D4ED8)   // deep corporate blue
+private val AccentIndigo  = Color(0xFF4338CA)   // corporate indigo
+private val AccentCyan    = Color(0xFF0369A1)   // corporate steel blue
+private val TextPrimary   = Color(0xFF0F172A)   // near-black
+private val TextSecondary = Color(0xFF475569)   // medium slate
+private val TextMuted     = Color(0xFF94A3B8)   // light muted
+private val BorderSubtle  = Color(0xFFE2E8F0)   // hairline border
+private val BorderMedium  = Color(0xFFCBD5E1)   // slightly more visible border
+private val DangerRed     = Color(0xFFDC2626)   // corporate red
+private val SuccessGreen  = Color(0xFF16A34A)   // corporate green
 
 // ─── Timestamp Helpers ──────────────────────────────────────────────────────
 fun parseServerTimestamp(ts: String): Long {
@@ -161,35 +166,75 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
         (ts + 5 * 60 * 1000) > currentTime
     }.sortedByDescending { parseServerTimestamp(it.timestamp) }
 
+    val pullRefreshState = rememberPullToRefreshState()
+
     Scaffold(
         containerColor = BgDeep,
         topBar = {
             TopAppBar(
                 modifier = Modifier
+                    .shadow(elevation = 1.dp, spotColor = BorderSubtle)
                     .drawBehind {
-                        drawLine(color = BorderSubtle, start = Offset(0f, size.height), end = Offset(size.width, size.height), strokeWidth = 1f)
+                        drawLine(
+                            color = BorderSubtle,
+                            start = Offset(0f, size.height),
+                            end = Offset(size.width, size.height),
+                            strokeWidth = 1f
+                        )
                     },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(8.sdp()).background(AccentCyan, CircleShape))
+                        Box(
+                            modifier = Modifier
+                                .size(8.sdp())
+                                .background(AccentCyan, CircleShape)
+                        )
                         Spacer(Modifier.width(10.sdp()))
-                        Text("mRelay", color = TextPrimary, fontSize = 18.ssp(), fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
+                        Text(
+                            "mRelay",
+                            color = TextPrimary,
+                            fontSize = 18.ssp(),
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-0.5).sp
+                        )
                         Spacer(Modifier.width(6.sdp()))
-                        Text("DASHBOARD", color = TextMuted, fontSize = 11.ssp(), fontWeight = FontWeight.Medium, letterSpacing = 2.ssp())
+                        Text(
+                            "DASHBOARD",
+                            color = TextMuted,
+                            fontSize = 11.ssp(),
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 2.ssp()
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BgDeep),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BgCard),
                 actions = {
                     if (isRefreshing && !isLoadingLogs) {
-                        Box(modifier = Modifier.padding(end = 4.sdp()).size(40.sdp()), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = AccentBlue, modifier = Modifier.size(18.sdp()), strokeWidth = 2.sdp())
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 4.sdp())
+                                .size(40.sdp()),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = AccentBlue,
+                                modifier = Modifier.size(18.sdp()),
+                                strokeWidth = 2.sdp()
+                            )
                         }
                     } else {
-                        IconButton(onClick = fetchLogs) { Icon(Icons.Rounded.Refresh, "Refresh", tint = TextSecondary, modifier = Modifier.size(20.sdp())) }
+                        IconButton(onClick = fetchLogs) {
+                            Icon(
+                                Icons.Rounded.Refresh,
+                                "Refresh",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(20.sdp())
+                            )
+                        }
                     }
                     TextButton(
                         onClick = { authManager.logout(); onLogout() },
-                        colors = ButtonDefaults.textButtonColors(contentColor = DangerRed.copy(alpha = 0.8f)),
+                        colors = ButtonDefaults.textButtonColors(contentColor = DangerRed.copy(alpha = 0.85f)),
                         contentPadding = PaddingValues(horizontal = 12.sdp(), vertical = 8.sdp())
                     ) {
                         Icon(Icons.Rounded.ExitToApp, null, modifier = Modifier.size(16.sdp()))
@@ -200,104 +245,159 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.sdp()),
-            verticalArrangement = Arrangement.spacedBy(0.sdp())
+
+        // ── Pull-to-Refresh wraps the entire scrollable content ──────────────
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { fetchLogs() },
+            state = pullRefreshState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
-            item {
-                Spacer(Modifier.height(20.sdp()))
-                EnterpriseHeader(name = userName, email = userEmail, dept = userDept)
-                Spacer(Modifier.height(28.sdp()))
-            }
-
-            item {
-                SectionHeader("Live Messages", "Auto-expires in 5 minutes", if (activeLogs.isNotEmpty()) "${activeLogs.size}" else null)
-                Spacer(Modifier.height(12.sdp()))
-            }
-
-            if (isLoadingLogs) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.sdp()),
+                verticalArrangement = Arrangement.spacedBy(0.sdp())
+            ) {
                 item {
-                    Box(Modifier.fillMaxWidth().padding(vertical = 32.sdp()), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = AccentBlue, modifier = Modifier.size(28.sdp()), strokeWidth = 2.5.dp)
-                            Spacer(Modifier.height(12.sdp()))
-                            Text("Fetching messages…", color = TextMuted, fontSize = 13.ssp())
-                        }
-                    }
+                    Spacer(Modifier.height(20.sdp()))
+                    EnterpriseHeader(name = userName, email = userEmail, dept = userDept)
+                    Spacer(Modifier.height(28.sdp()))
                 }
-            } else if (activeLogs.isEmpty()) {
-                item { EmptyState("No active messages right now", "New messages will appear here when forwarded") }
-            } else {
-                items(activeLogs) { log ->
-                    ActiveLogItem(log = log, currentTime = currentTime)
-                    Spacer(Modifier.height(10.sdp()))
+
+                item {
+                    SectionHeader(
+                        "Live Messages",
+                        "Auto-expires in 5 minutes",
+                        if (activeLogs.isNotEmpty()) "${activeLogs.size}" else null
+                    )
+                    Spacer(Modifier.height(12.sdp()))
                 }
-            }
 
-            item {
-                Spacer(Modifier.height(28.sdp()))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SectionHeader("Sender Whitelist", "Control which senders get forwarded", if (whitelist.isNotEmpty()) "${whitelist.size}" else null)
-                        Spacer(Modifier.width(6.sdp()))
-                        IconButton(onClick = { showInfoDialog = true }, modifier = Modifier.size(32.sdp())) {
-                            Icon(Icons.Rounded.Info, "How whitelisting works", tint = TextMuted, modifier = Modifier.size(20.sdp()))
-                        }
-                    }
-                    FilledTonalButton(
-                        onClick = {
-                            editEntry = null
-                            showAddSheet = true
-                        },
-                        colors = ButtonDefaults.filledTonalButtonColors(containerColor = AccentBlue.copy(alpha = 0.15f), contentColor = AccentBlue),
-                        contentPadding = PaddingValues(horizontal = 14.sdp(), vertical = 8.sdp()),
-                        shape = RoundedCornerShape(10.sdp())
-                    ) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.sdp()))
-                        Spacer(Modifier.width(6.sdp()))
-                        Text("Add Sender", fontSize = 13.ssp(), fontWeight = FontWeight.SemiBold)
-                    }
-                }
-                Spacer(Modifier.height(20.sdp()))
-            }
-
-            if (whitelist.isEmpty()) {
-                item { EmptyState("No senders whitelisted yet", "Tap \"Add Sender\" to whitelist your first sender ID") }
-            } else {
-                items(whitelist) { entry ->
-                    WhitelistItem(
-                        entry = entry,
-                        onEdit = {
-                            editEntry = entry
-                            showAddSheet = true
-                        },
-                        onDelete = {
-                            scope.launch {
-                                val token = authManager.getToken()
-                                if (!token.isNullOrEmpty()) {
-                                    try {
-                                        val res = RetrofitInstance.api.deleteWhitelistEntry("Bearer $token", entry._id)
-                                        if (res.isSuccessful) {
-                                            whitelist = whitelist.filter { it._id != entry._id }
-
-                                            // update local prefs on delete
-                                            val senderIds = whitelist.map { it.senderID }.toSet()
-                                            prefs.edit().putStringSet("whitelist_senders", senderIds).apply()
-                                        }
-                                    } catch (e: Exception) { Log.e("HomeScreen", "Error deleting whitelist", e) }
-                                }
+                if (isLoadingLogs) {
+                    item {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.sdp()),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(
+                                    color = AccentBlue,
+                                    modifier = Modifier.size(28.sdp()),
+                                    strokeWidth = 2.5.dp
+                                )
+                                Spacer(Modifier.height(12.sdp()))
+                                Text("Fetching messages…", color = TextMuted, fontSize = 13.ssp())
                             }
                         }
-                    )
-                    Spacer(Modifier.height(8.sdp()))
+                    }
+                } else if (activeLogs.isEmpty()) {
+                    item {
+                        EmptyState(
+                            "No active messages right now",
+                            "New messages will appear here when forwarded"
+                        )
+                    }
+                } else {
+                    items(activeLogs) { log ->
+                        ActiveLogItem(log = log, currentTime = currentTime)
+                        Spacer(Modifier.height(10.sdp()))
+                    }
                 }
-            }
 
-            item { Spacer(Modifier.height(40.sdp())) }
+                item {
+                    Spacer(Modifier.height(28.sdp()))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SectionHeader(
+                                "Sender Whitelist",
+                                "Control which senders get forwarded",
+                                if (whitelist.isNotEmpty()) "${whitelist.size}" else null
+                            )
+                            Spacer(Modifier.width(6.sdp()))
+                            IconButton(
+                                onClick = { showInfoDialog = true },
+                                modifier = Modifier.size(32.sdp())
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Info,
+                                    "How whitelisting works",
+                                    tint = TextMuted,
+                                    modifier = Modifier.size(20.sdp())
+                                )
+                            }
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                editEntry = null
+                                showAddSheet = true
+                            },
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = AccentBlue.copy(alpha = 0.1f),
+                                contentColor = AccentBlue
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.sdp(), vertical = 8.sdp()),
+                            shape = RoundedCornerShape(10.sdp())
+                        ) {
+                            Icon(Icons.Default.Add, null, modifier = Modifier.size(16.sdp()))
+                            Spacer(Modifier.width(6.sdp()))
+                            Text("Add Sender", fontSize = 13.ssp(), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    Spacer(Modifier.height(20.sdp()))
+                }
+
+                if (whitelist.isEmpty()) {
+                    item {
+                        EmptyState(
+                            "No senders whitelisted yet",
+                            "Tap \"Add Sender\" to whitelist your first sender ID"
+                        )
+                    }
+                } else {
+                    items(whitelist) { entry ->
+                        WhitelistItem(
+                            entry = entry,
+                            onEdit = {
+                                editEntry = entry
+                                showAddSheet = true
+                            },
+                            onDelete = {
+                                scope.launch {
+                                    val token = authManager.getToken()
+                                    if (!token.isNullOrEmpty()) {
+                                        try {
+                                            val res = RetrofitInstance.api.deleteWhitelistEntry(
+                                                "Bearer $token", entry._id
+                                            )
+                                            if (res.isSuccessful) {
+                                                whitelist = whitelist.filter { it._id != entry._id }
+
+                                                // update local prefs on delete
+                                                val senderIds = whitelist.map { it.senderID }.toSet()
+                                                prefs.edit().putStringSet("whitelist_senders", senderIds).apply()
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.e("HomeScreen", "Error deleting whitelist", e)
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                        Spacer(Modifier.height(8.sdp()))
+                    }
+                }
+
+                item { Spacer(Modifier.height(40.sdp())) }
+            }
         }
     }
 
@@ -305,7 +405,6 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
     if (showAddSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-        // Initialize state either empty or with pre-filled details from editEntry
         var newSender by remember { mutableStateOf(editEntry?.senderID ?: "") }
         var selectedEmployees by remember {
             mutableStateOf(
@@ -328,7 +427,7 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
             onDismissRequest = { showAddSheet = false },
             sheetState       = sheetState,
             containerColor   = BgCard,
-            dragHandle       = { BottomSheetDefaults.DragHandle(color = BorderSubtle) },
+            dragHandle       = { BottomSheetDefaults.DragHandle(color = BorderMedium) },
         ) {
             Column(
                 modifier = Modifier
@@ -339,7 +438,6 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                     .padding(horizontal = 24.sdp())
                     .padding(bottom = 24.sdp())
             ) {
-                // --- HEADER SECTION ---
                 Text(
                     text = if (editEntry != null) "Edit Whitelist Sender" else "Add to Whitelist",
                     color = TextPrimary,
@@ -355,34 +453,32 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                     modifier = Modifier.padding(top = 4.sdp())
                 )
 
-                Spacer(Modifier.height(24.sdp())) // Major section gap
+                Spacer(Modifier.height(24.sdp()))
 
-                // --- SENDER ID FIELD ---
                 OutlinedTextField(
                     value          = newSender,
                     onValueChange  = { newSender = it },
                     label          = { Text("Sender ID (e.g. HDFC, PMHDFC-S)") },
                     singleLine     = true,
-                    enabled        = editEntry == null, // disable editing of Sender ID during update to prevent orphan records
+                    enabled        = editEntry == null,
                     shape          = RoundedCornerShape(12.sdp()),
                     colors         = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor   = AccentBlue,
-                        unfocusedBorderColor = BorderSubtle,
+                        unfocusedBorderColor = BorderMedium,
                         cursorColor          = AccentBlue,
                         focusedLabelColor    = AccentBlue,
                         focusedTextColor     = TextPrimary,
                         unfocusedTextColor   = TextPrimary,
                         unfocusedLabelColor  = TextSecondary,
-                        disabledBorderColor  = BorderSubtle.copy(alpha = 0.5f),
+                        disabledBorderColor  = BorderSubtle,
                         disabledTextColor    = TextSecondary,
-                        disabledLabelColor   = TextSecondary
+                        disabledLabelColor   = TextMuted
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(Modifier.height(24.sdp())) // Major section gap
+                Spacer(Modifier.height(24.sdp()))
 
-                // --- VISIBLE TO FIELD ---
                 Text(
                     text = "Visible to",
                     color = TextPrimary,
@@ -395,13 +491,12 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .defaultMinSize(minHeight = 52.sdp())
-                        .border(1.sdp(), if (showDropdown) AccentBlue else BorderSubtle, RoundedCornerShape(12.sdp()))
+                        .border(1.sdp(), if (showDropdown) AccentBlue else BorderMedium, RoundedCornerShape(12.sdp()))
                         .background(BgCardAlt, RoundedCornerShape(12.sdp()))
                         .padding(horizontal = 12.sdp(), vertical = 10.sdp()),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Column(verticalArrangement = Arrangement.Center) {
-                        // Chosen Employee Chips
                         if (selectedEmployees.isNotEmpty()) {
                             Row(
                                 modifier = Modifier
@@ -412,11 +507,17 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                                 selectedEmployees.forEach { emp ->
                                     Row(
                                         modifier = Modifier
-                                            .background(AccentBlue.copy(alpha = 0.15f), RoundedCornerShape(8.sdp()))
+                                            .background(AccentBlue.copy(alpha = 0.1f), RoundedCornerShape(8.sdp()))
+                                            .border(1.sdp(), AccentBlue.copy(alpha = 0.25f), RoundedCornerShape(8.sdp()))
                                             .padding(horizontal = 10.sdp(), vertical = 6.sdp()),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(emp.name, color = AccentBlue, fontSize = 12.ssp(), fontWeight = FontWeight.Medium)
+                                        Text(
+                                            emp.name,
+                                            color = AccentBlue,
+                                            fontSize = 12.ssp(),
+                                            fontWeight = FontWeight.Medium
+                                        )
                                         Spacer(Modifier.width(6.sdp()))
                                         Icon(
                                             Icons.Rounded.Close,
@@ -433,7 +534,6 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                             Spacer(Modifier.height(8.sdp()))
                         }
 
-                        // Search Input Box
                         BasicTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it; showDropdown = true },
@@ -444,7 +544,7 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                             cursorBrush = SolidColor(AccentBlue),
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty() && selectedEmployees.isEmpty()) {
-                                    Text("Search employees...", color = TextSecondary, fontSize = 14.ssp())
+                                    Text("Search employees...", color = TextMuted, fontSize = 14.ssp())
                                 }
                                 innerTextField()
                             }
@@ -452,7 +552,6 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                     }
                 }
 
-                // --- DROPDOWN SUGGESTIONS ---
                 AnimatedVisibility(
                     visible = showDropdown && filteredEmployees.isNotEmpty(),
                     enter = expandVertically() + fadeIn(),
@@ -462,9 +561,9 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 4.sdp())
-                            .border(1.sdp(), BorderSubtle, RoundedCornerShape(12.sdp()))
+                            .border(1.sdp(), BorderMedium, RoundedCornerShape(12.sdp()))
                             .clip(RoundedCornerShape(12.sdp()))
-                            .background(BgCardAlt)
+                            .background(BgCard)
                     ) {
                         filteredEmployees.take(4).forEach { emp ->
                             Row(
@@ -480,10 +579,15 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                                 Box(
                                     modifier = Modifier
                                         .size(32.sdp())
-                                        .background(BorderSubtle.copy(alpha = 0.5f), CircleShape),
+                                        .background(AccentBlue.copy(alpha = 0.1f), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(emp.name.take(1).uppercase(), color = TextPrimary, fontSize = 13.ssp(), fontWeight = FontWeight.Bold)
+                                    Text(
+                                        emp.name.take(1).uppercase(),
+                                        color = AccentBlue,
+                                        fontSize = 13.ssp(),
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                                 Spacer(Modifier.width(12.sdp()))
                                 Column {
@@ -492,7 +596,11 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                                 }
                             }
                             if (emp != filteredEmployees.take(4).last()) {
-                                Divider(color = BorderSubtle.copy(alpha = 0.5f), thickness = 1.sdp(), modifier = Modifier.padding(horizontal = 16.sdp()))
+                                Divider(
+                                    color = BorderSubtle,
+                                    thickness = 1.sdp(),
+                                    modifier = Modifier.padding(horizontal = 16.sdp())
+                                )
                             }
                         }
                     }
@@ -500,7 +608,6 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
 
                 Spacer(Modifier.height(32.sdp()))
 
-                // --- SAVE BUTTON ---
                 val isFormValid = newSender.isNotBlank() && selectedEmployees.isNotEmpty()
                 Button(
                     onClick = {
@@ -516,18 +623,23 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                                     )
 
                                     try {
-                                        val res = RetrofitInstance.api.addWhitelistEntry("Bearer $token", request)
+                                        val res = RetrofitInstance.api.addWhitelistEntry(
+                                            "Bearer $token", request
+                                        )
                                         if (res.isSuccessful) {
                                             val newEntry = res.body()
                                             if (newEntry != null) {
-                                                whitelist = whitelist.filter { it.senderID != newEntry.senderID } + newEntry
+                                                whitelist = whitelist.filter {
+                                                    it.senderID != newEntry.senderID
+                                                } + newEntry
 
-                                                // update local prefs on add
                                                 val senderIds = whitelist.map { it.senderID }.toSet()
                                                 prefs.edit().putStringSet("whitelist_senders", senderIds).apply()
                                             }
                                         }
-                                    } catch (e: Exception) { Log.e("HomeScreen", "Error adding whitelist", e) }
+                                    } catch (e: Exception) {
+                                        Log.e("HomeScreen", "Error adding whitelist", e)
+                                    }
                                 }
                                 showAddSheet = false
                             }
@@ -538,10 +650,10 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AccentBlue,
                         contentColor = Color.White,
-                        disabledContainerColor = AccentBlue.copy(alpha = 0.3f),
+                        disabledContainerColor = AccentBlue.copy(alpha = 0.25f),
                         disabledContentColor = Color.White.copy(alpha = 0.5f)
                     ),
-                    shape  = RoundedCornerShape(14.sdp())
+                    shape = RoundedCornerShape(14.sdp())
                 ) {
                     Text(
                         text = if (editEntry != null) "Update Sender" else "Save Sender",
@@ -562,11 +674,24 @@ fun HomeScreen(onLogout: () -> Unit = {}) {
             containerColor   = BgCard,
             shape            = RoundedCornerShape(20.sdp()),
             icon = {
-                Box(Modifier.size(44.sdp()).background(AccentBlue.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier
+                        .size(44.sdp())
+                        .background(AccentBlue.copy(alpha = 0.1f), CircleShape)
+                        .border(1.sdp(), AccentBlue.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(Icons.Rounded.Info, null, tint = AccentBlue, modifier = Modifier.size(22.sdp()))
                 }
             },
-            title = { Text("How Whitelisting Works", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 17.ssp()) },
+            title = {
+                Text(
+                    "How Whitelisting Works",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.ssp()
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.sdp())) {
                     InfoPoint("🔒", "Matched messages are securely relayed to the server and automatically deleted after 5 minutes.")
@@ -598,10 +723,21 @@ fun InfoPoint(emoji: String, text: String) {
 fun SectionHeader(title: String, subtitle: String, badge: String? = null) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = TextPrimary, fontSize = 16.ssp(), fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp)
+            Text(
+                title,
+                color = TextPrimary,
+                fontSize = 16.ssp(),
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.3).sp
+            )
             if (badge != null) {
                 Spacer(Modifier.width(8.sdp()))
-                Box(modifier = Modifier.background(AccentBlue.copy(alpha = 0.2f), RoundedCornerShape(6.sdp())).padding(horizontal = 7.sdp(), vertical = 2.sdp())) {
+                Box(
+                    modifier = Modifier
+                        .background(AccentBlue.copy(alpha = 0.12f), RoundedCornerShape(6.sdp()))
+                        .border(1.sdp(), AccentBlue.copy(alpha = 0.2f), RoundedCornerShape(6.sdp()))
+                        .padding(horizontal = 7.sdp(), vertical = 2.sdp())
+                ) {
                     Text(badge, color = AccentBlue, fontSize = 11.ssp(), fontWeight = FontWeight.Bold)
                 }
             }
@@ -616,32 +752,65 @@ fun EnterpriseHeader(name: String, email: String, dept: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.sdp()))
-            .background(Brush.linearGradient(0f to Color(0xFF0D1628), 0.6f to Color(0xFF0F1E38), 1f to Color(0xFF071020)))
-            .border(1.sdp(), BorderSubtle, RoundedCornerShape(18.sdp()))
+            .background(
+                Brush.linearGradient(
+                    0f to Color(0xFFEFF6FF),
+                    0.55f to Color(0xFFDBEAFE),
+                    1f to Color(0xFFBFDBFE)
+                )
+            )
+            .border(1.sdp(), BorderMedium, RoundedCornerShape(18.sdp()))
             .padding(20.sdp())
     ) {
+        // Subtle dot-grid overlay
         Box(
             modifier = Modifier.matchParentSize().drawBehind {
                 val step = 28.dp.toPx()
                 var x = 0f
                 while (x < size.width) {
-                    drawLine(Color(0x08FFFFFF), Offset(x, 0f), Offset(x, size.height))
+                    drawLine(Color(0x0A1D4ED8), Offset(x, 0f), Offset(x, size.height))
                     x += step
                 }
             }
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(52.sdp()).background(Brush.linearGradient(listOf(AccentBlue, AccentIndigo)), CircleShape), contentAlignment = Alignment.Center) {
-                Text(name.take(1).uppercase(), color = Color.White, fontSize = 22.ssp(), fontWeight = FontWeight.Bold)
+            Box(
+                modifier = Modifier
+                    .size(52.sdp())
+                    .shadow(4.dp, CircleShape)
+                    .background(
+                        Brush.linearGradient(listOf(AccentBlue, AccentIndigo)),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    name.take(1).uppercase(),
+                    color = Color.White,
+                    fontSize = 22.ssp(),
+                    fontWeight = FontWeight.Bold
+                )
             }
             Spacer(Modifier.width(16.sdp()))
             Column(modifier = Modifier.weight(1f)) {
-                Text("Welcome back", color = TextMuted, fontSize = 11.ssp(), letterSpacing = 0.5.sp)
-                Text(name, color = TextPrimary, fontSize = 20.ssp(), fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
+                Text("Welcome back", color = AccentCyan, fontSize = 11.ssp(), letterSpacing = 0.5.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    name,
+                    color = TextPrimary,
+                    fontSize = 20.ssp(),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp
+                )
                 Spacer(Modifier.height(10.sdp()))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.sdp())) {
-                    MetaBadge(icon = { Icon(Icons.Rounded.Email, null, tint = TextMuted, modifier = Modifier.size(11.sdp())) }, text = email)
-                    MetaBadge(icon = { Icon(Icons.Rounded.Badge, null, tint = TextMuted, modifier = Modifier.size(11.sdp())) }, text = dept)
+                    MetaBadge(
+                        icon = { Icon(Icons.Rounded.Email, null, tint = AccentBlue, modifier = Modifier.size(11.sdp())) },
+                        text = email
+                    )
+                    MetaBadge(
+                        icon = { Icon(Icons.Rounded.Badge, null, tint = AccentBlue, modifier = Modifier.size(11.sdp())) },
+                        text = dept
+                    )
                 }
             }
         }
@@ -651,7 +820,10 @@ fun EnterpriseHeader(name: String, email: String, dept: String) {
 @Composable
 fun MetaBadge(icon: @Composable () -> Unit, text: String) {
     Row(
-        modifier = Modifier.background(Color(0xFF1E3A5F).copy(alpha = 0.5f), RoundedCornerShape(6.sdp())).padding(horizontal = 8.sdp(), vertical = 4.sdp()),
+        modifier = Modifier
+            .background(Color.White.copy(alpha = 0.65f), RoundedCornerShape(6.sdp()))
+            .border(1.sdp(), BorderMedium.copy(alpha = 0.6f), RoundedCornerShape(6.sdp()))
+            .padding(horizontal = 8.sdp(), vertical = 4.sdp()),
         verticalAlignment = Alignment.CenterVertically
     ) {
         icon()
@@ -663,11 +835,22 @@ fun MetaBadge(icon: @Composable () -> Unit, text: String) {
 @Composable
 fun EmptyState(message: String, sub: String) {
     Box(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.sdp())).background(BgCard).border(1.sdp(), BorderSubtle, RoundedCornerShape(14.sdp())).padding(vertical = 28.sdp()),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.sdp()))
+            .background(BgCard)
+            .border(1.sdp(), BorderSubtle, RoundedCornerShape(14.sdp()))
+            .padding(vertical = 28.sdp()),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.size(40.sdp()).background(TextMuted.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .size(40.sdp())
+                    .background(AccentBlue.copy(alpha = 0.08f), CircleShape)
+                    .border(1.sdp(), AccentBlue.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(Icons.Rounded.Info, null, tint = TextMuted, modifier = Modifier.size(18.sdp()))
             }
             Spacer(Modifier.height(10.sdp()))
@@ -690,17 +873,38 @@ fun ActiveLogItem(log: SmsLogResponse, currentTime: Long) {
     val remainingFraction = (remainingMs / (5f * 60 * 1000)).coerceIn(0f, 1f)
     val elapsedFraction   = 1f - remainingFraction
     val timerColor = when {
-        remainingFraction > 0.5f -> Color(0xFF22C55E)
-        remainingFraction > 0.25f -> Color(0xFFF59E0B)
-        else -> DangerRed
+        remainingFraction > 0.5f  -> SuccessGreen
+        remainingFraction > 0.25f -> Color(0xFFD97706)  // amber
+        else                      -> DangerRed
     }
 
-    Surface(color = BgCard, shape = RoundedCornerShape(16.sdp()), border = BorderStroke(1.sdp(), BorderSubtle), modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        color  = BgCard,
+        shape  = RoundedCornerShape(16.sdp()),
+        border = BorderStroke(1.sdp(), BorderSubtle),
+        shadowElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(modifier = Modifier.padding(16.sdp())) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(36.sdp()).background(AccentBlue.copy(alpha = 0.15f), RoundedCornerShape(10.sdp())), contentAlignment = Alignment.Center) {
-                        Text(log.sender.take(2).uppercase(), color = AccentBlue, fontSize = 13.ssp(), fontWeight = FontWeight.Bold)
+                    Box(
+                        modifier = Modifier
+                            .size(36.sdp())
+                            .background(AccentBlue.copy(alpha = 0.1f), RoundedCornerShape(10.sdp()))
+                            .border(1.sdp(), AccentBlue.copy(alpha = 0.2f), RoundedCornerShape(10.sdp())),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            log.sender.take(2).uppercase(),
+                            color = AccentBlue,
+                            fontSize = 13.ssp(),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                     Spacer(Modifier.width(10.sdp()))
                     Column {
@@ -708,22 +912,67 @@ fun ActiveLogItem(log: SmsLogResponse, currentTime: Long) {
                         Text("SMS Sender", color = TextMuted, fontSize = 11.ssp())
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.background(timerColor.copy(alpha = 0.12f), RoundedCornerShape(8.sdp())).padding(horizontal = 10.sdp(), vertical = 6.sdp())) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(timerColor.copy(alpha = 0.1f), RoundedCornerShape(8.sdp()))
+                        .border(1.sdp(), timerColor.copy(alpha = 0.25f), RoundedCornerShape(8.sdp()))
+                        .padding(horizontal = 10.sdp(), vertical = 6.sdp())
+                ) {
                     Icon(Icons.Rounded.Timer, null, tint = timerColor, modifier = Modifier.size(13.sdp()))
                     Spacer(Modifier.width(5.sdp()))
-                    Text(timeString, color = timerColor, fontSize = 13.ssp(), fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                    Text(
+                        timeString,
+                        color = timerColor,
+                        fontSize = 13.ssp(),
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
                 }
             }
             Spacer(Modifier.height(12.sdp()))
-            Box(Modifier.fillMaxWidth().height(3.sdp()).clip(RoundedCornerShape(2.sdp())).background(TextMuted.copy(alpha = 0.15f))) {
-                Box(Modifier.fillMaxWidth(elapsedFraction).fillMaxHeight().clip(RoundedCornerShape(2.sdp())).background(Brush.horizontalGradient(listOf(timerColor, timerColor.copy(alpha = 0.6f)))))
+            // Progress bar
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(3.sdp())
+                    .clip(RoundedCornerShape(2.sdp()))
+                    .background(BorderSubtle)
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(elapsedFraction)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(2.sdp()))
+                        .background(
+                            Brush.horizontalGradient(listOf(timerColor, timerColor.copy(alpha = 0.5f)))
+                        )
+                )
             }
             Spacer(Modifier.height(12.sdp()))
-            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.sdp())).background(BgDeep.copy(alpha = 0.6f)).padding(12.sdp())) {
-                Text(log.message, color = TextPrimary.copy(alpha = 0.9f), fontSize = 13.ssp(), lineHeight = 19.ssp(), overflow = TextOverflow.Ellipsis)
+            // Message body
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.sdp()))
+                    .background(BgCardAlt)
+                    .border(1.sdp(), BorderSubtle, RoundedCornerShape(10.sdp()))
+                    .padding(12.sdp())
+            ) {
+                Text(
+                    log.message,
+                    color = TextPrimary.copy(alpha = 0.85f),
+                    fontSize = 13.ssp(),
+                    lineHeight = 19.ssp(),
+                    overflow = TextOverflow.Ellipsis
+                )
             }
             Spacer(Modifier.height(12.sdp()))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.AccountCircle, null, tint = TextMuted, modifier = Modifier.size(13.sdp()))
                     Spacer(Modifier.width(4.sdp()))
@@ -747,34 +996,64 @@ fun WhitelistItem(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Surface(color = BgCard, shape = RoundedCornerShape(12.sdp()), border = BorderStroke(1.sdp(), BorderSubtle), modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.padding(horizontal = 16.sdp(), vertical = 13.sdp()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+    Surface(
+        color  = BgCard,
+        shape  = RoundedCornerShape(12.sdp()),
+        border = BorderStroke(1.sdp(), BorderSubtle),
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.sdp(), vertical = 13.sdp()),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Box(modifier = Modifier.size(34.sdp()).background(AccentIndigo.copy(alpha = 0.15f), RoundedCornerShape(8.sdp())), contentAlignment = Alignment.Center) {
-                    Text(entry.senderID.take(2).uppercase(), color = AccentIndigo, fontSize = 12.ssp(), fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .size(34.sdp())
+                        .background(AccentIndigo.copy(alpha = 0.1f), RoundedCornerShape(8.sdp()))
+                        .border(1.sdp(), AccentIndigo.copy(alpha = 0.2f), RoundedCornerShape(8.sdp())),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        entry.senderID.take(2).uppercase(),
+                        color = AccentIndigo,
+                        fontSize = 12.ssp(),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
                 Spacer(Modifier.width(12.sdp()))
-
                 Column(modifier = Modifier.weight(1f).padding(end = 12.sdp())) {
-                    Text(entry.senderID, color = TextPrimary, fontSize = 15.ssp(), fontWeight = FontWeight.Medium)
-
+                    Text(
+                        entry.senderID,
+                        color = TextPrimary,
+                        fontSize = 15.ssp(),
+                        fontWeight = FontWeight.Medium
+                    )
                     val subtext = if (entry.applicableEmployees.isNotEmpty()) {
                         "Visible to: ${entry.applicableEmployees.joinToString(", ")}"
                     } else "No employees assigned"
-
                     Text(subtext, color = TextMuted, fontSize = 11.ssp(), lineHeight = 16.ssp())
                 }
             }
 
             Box {
                 IconButton(onClick = { expanded = true }, modifier = Modifier.size(36.sdp())) {
-                    Icon(Icons.Rounded.MoreVert, contentDescription = "More options", tint = TextSecondary, modifier = Modifier.size(20.sdp()))
+                    Icon(
+                        Icons.Rounded.MoreVert,
+                        contentDescription = "More options",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(20.sdp())
+                    )
                 }
 
                 DropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
-                    modifier = Modifier.background(BgCardAlt).border(1.sdp(), BorderSubtle, RoundedCornerShape(8.sdp()))
+                    modifier = Modifier
+                        .background(BgCard)
+                        .border(1.sdp(), BorderSubtle, RoundedCornerShape(8.sdp()))
                 ) {
                     DropdownMenuItem(
                         text = { Text("Edit", color = TextPrimary, fontSize = 13.ssp()) },
@@ -782,7 +1061,9 @@ fun WhitelistItem(
                             expanded = false
                             onEdit()
                         },
-                        leadingIcon = { Icon(Icons.Rounded.Edit, null, tint = AccentBlue, modifier = Modifier.size(16.sdp())) },
+                        leadingIcon = {
+                            Icon(Icons.Rounded.Edit, null, tint = AccentBlue, modifier = Modifier.size(16.sdp()))
+                        },
                         contentPadding = PaddingValues(horizontal = 16.sdp(), vertical = 8.sdp())
                     )
                     DropdownMenuItem(
@@ -791,7 +1072,9 @@ fun WhitelistItem(
                             expanded = false
                             onDelete()
                         },
-                        leadingIcon = { Icon(Icons.Rounded.Delete, null, tint = DangerRed, modifier = Modifier.size(16.sdp())) },
+                        leadingIcon = {
+                            Icon(Icons.Rounded.Delete, null, tint = DangerRed, modifier = Modifier.size(16.sdp()))
+                        },
                         contentPadding = PaddingValues(horizontal = 16.sdp(), vertical = 8.sdp())
                     )
                 }

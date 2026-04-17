@@ -214,7 +214,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
                         // Static Version Text
                         Text(
-                            text = "v1.0.0", // Replace with actual version fetch logic
+                            text = "v1.1.0", // Replace with actual version fetch logic
                             color = Color.White.copy(alpha = 0.4f),
                             fontSize = 12.ssp(),
                             fontWeight = FontWeight.Normal,
